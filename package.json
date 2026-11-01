@@ -1,0 +1,33 @@
+{
+  "name": "info-plist-checker",
+  "version": "1.0.0",
+  "description": "Check an iOS or Mac app's Info.plist against App Store Connect upload rules. XML or binary plist, zero dependencies.",
+  "type": "module",
+  "license": "MIT",
+  "author": "Peter Zhang",
+  "homepage": "https://obelisk.club/tools/info-plist-checker",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/peterzhang0216/info-plist-checker.git"
+  },
+  "bugs": {
+    "url": "https://github.com/peterzhang0216/info-plist-checker/issues"
+  },
+  "keywords": ["info.plist", "plist", "ios", "macos", "xcode", "app-store-connect", "app-store", "lint", "cli"],
+  "bin": {
+    "info-plist-check": "bin/info-plist-check.mjs"
+  },
+  "exports": {
+    ".": "./src/index.mjs",
+    "./plist": "./src/apple-plist.mjs",
+    "./messages": "./src/messages.mjs",
+    "./package.json": "./package.json"
+  },
+  "files": ["bin", "src"],
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "test": "node --test"
+  }
+}
