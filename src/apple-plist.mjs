@@ -346,8 +346,8 @@ export function parseBinaryPlist(bytes, opts = {}) {
 
   const stack = new Set();
   // Objects may be shared by reference, so a tiny file can describe an exponentially large value.
-  // Cap the number of objects produced; real Info.plists stay far below this.
-  let budget = Math.max(numObjects * 16, 100_000);
+  // Cap the number of objects produced; real plists stay far below this.
+  let budget = Math.max(numObjects * 64, 1_000_000);
   const read = (ref, depth) => {
     if (--budget < 0) throw new PlistError("plist expands to too many objects");
     if (depth > MAX_DEPTH) throw new PlistError("nested too deeply");
