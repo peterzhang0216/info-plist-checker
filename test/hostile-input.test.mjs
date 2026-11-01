@@ -11,7 +11,7 @@ const BIN = fileURLToPath(new URL("../bin/info-plist-check.mjs", import.meta.url
 function bplist(objs) {
   const body = [...Buffer.from("bplist00")];
   const offs = [];
-  for (const o of objs) { offs.push(body.length); body.push(...o); }
+  for (const o of objs) { offs.push(body.length); for (const b of o) body.push(b); }
   const tableOffset = body.length;
   for (const off of offs) body.push((off >>> 24) & 255, (off >>> 16) & 255, (off >>> 8) & 255, off & 255);
   const trailer = new Uint8Array(32);
@@ -36,6 +36,18 @@ test("shared references cannot expand a tiny file into billions of objects", () 
   assert.equal(r.ok, false);
   assert.match(r.error, /too many objects/);
   assert.ok(Date.now() - started < 2000, "rejected quickly");
+});
+
+test("one large data object referenced many times is refused, not copied gigabytes of times", () => {
+  // array of 2,000 references to a single 1 MB data object: about 2 GB if every reference were copied
+  const big = new Array(1 << 20).fill(0x41);
+  const arr = [0xaf, 0x11, 2000 >> 8, 2000 & 255, ...new Array(2000).fill(1)];
+  const data = [0x4f, 0x12, 0x00, 0x10, 0x00, 0x00, ...big];
+  const started = Date.now();
+  const r = parsePlist(bplist([arr, data]));
+  assert.equal(r.ok, false);
+  assert.match(r.error, /too much data/);
+  assert.ok(Date.now() - started < 3000, "rejected quickly");
 });
 
 test("a shared string used a few times still parses", () => {

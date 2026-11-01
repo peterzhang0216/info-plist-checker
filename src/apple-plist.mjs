@@ -348,6 +348,12 @@ export function parseBinaryPlist(bytes, opts = {}) {
   // Objects may be shared by reference, so a tiny file can describe an exponentially large value.
   // Cap the number of objects produced; real plists stay far below this.
   let budget = Math.max(numObjects * 64, 1_000_000);
+  // Shared strings and data are copied on every reference, so cap the bytes produced too.
+  let byteBudget = Math.max(bytes.length * 64, 64 * 1024 * 1024);
+  const spend = (n) => {
+    byteBudget -= n;
+    if (byteBudget < 0) throw new PlistError("plist expands to too much data");
+  };
   const read = (ref, depth) => {
     if (--budget < 0) throw new PlistError("plist expands to too many objects");
     if (depth > MAX_DEPTH) throw new PlistError("nested too deeply");
@@ -391,11 +397,13 @@ export function parseBinaryPlist(bytes, opts = {}) {
       case 0x4: {
         const [len, start] = lengthAt(p, info);
         if (start + len > t) throw new PlistError("data past the end");
+        spend(len);
         return bytes.slice(start, start + len);
       }
       case 0x5: {
         const [len, start] = lengthAt(p, info);
         if (start + len > t) throw new PlistError("string past the end");
+        spend(len);
         let s = "";
         for (let i = 0; i < len; i++) s += String.fromCharCode(bytes[start + i]);
         return s;
@@ -403,6 +411,7 @@ export function parseBinaryPlist(bytes, opts = {}) {
       case 0x6: {
         const [len, start] = lengthAt(p, info);
         if (start + len * 2 > t) throw new PlistError("string past the end");
+        spend(len * 2);
         let s = "";
         for (let i = 0; i < len; i++) s += String.fromCharCode(dv.getUint16(start + i * 2, false));
         return s;
@@ -410,6 +419,7 @@ export function parseBinaryPlist(bytes, opts = {}) {
       case 0x7: {
         const [len, start] = lengthAt(p, info);
         if (start + len > t) throw new PlistError("string past the end");
+        spend(len);
         return new TextDecoder("utf-8").decode(bytes.subarray(start, start + len));
       }
       case 0x8:
